@@ -10,6 +10,9 @@ void render(SDL_Renderer *renderer);
 
 int main(int argc, char **argv)
 {
+    char *home = getenv("HOME");
+    printf("HOME: %s\n", home);
+
     // initializing SDL as Video
     SDL_Init(SDL_INIT_VIDEO);
 
