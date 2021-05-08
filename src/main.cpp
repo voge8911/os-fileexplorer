@@ -22,7 +22,7 @@ typedef struct AppData
     bool phrase_selected;
 } AppData;
 
-
+void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset);
 void init(SDL_Renderer *renderer, AppData *data_ptr);
 void render(SDL_Renderer *renderer, AppData *data_ptr);
 void quit(AppData *data_ptr);
@@ -33,7 +33,9 @@ int main(int argc, char **argv)
     char *home = getenv("HOME");
     printf("HOME: %s\n", home);
     std::vector<FileEntry *> files;
+
     listDirectory(home, 0, files);
+    std::sort(files.begin(), files.end(), FileComparator());
 
     printf("# of files = %ld\n", files.size());
 
@@ -53,22 +55,16 @@ int main(int argc, char **argv)
     //render(renderer, &data);
 
     // erase renderer content
-    SDL_SetRenderDrawColor(renderer, 235, 235, 235, 255);
+    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 0);
     SDL_RenderClear(renderer);
 
-    int i, x, y;
-    x = 10;
-    y = 10;
-    for (i = 0; i < files.size(); i++)
-    {
-        files[i]->initializeFile(renderer);
-        files[i]->renderFile(renderer, x, y);
-        y += 20;
-        if (y >= HEIGHT)
-        {
-            x += 25;
-        }
-    }
+    // draw and render window
+    SDL_SetRenderDrawColor(renderer, 35, 35, 35, 0);
+    SDL_Rect rect = {200, 0, 700, 600};
+    SDL_RenderFillRect(renderer, &rect);
+
+    // render files
+    renderFiles(renderer, files, 0, 0);
 
     // show rendered frame
     SDL_RenderPresent(renderer);
@@ -82,30 +78,62 @@ int main(int argc, char **argv)
         switch (event.type)
         {
         case SDL_MOUSEMOTION:
-            std::cout << "mouse: " << event.motion.x << " " << event.motion.y << std::endl;
+            std::cout << "mouse: x=" << event.motion.x << " y=" << event.motion.y << std::endl;
             break;
         case SDL_MOUSEBUTTONDOWN:
             std::cout << "Button Down" << std::endl;
         case SDL_MOUSEBUTTONUP:
             std::cout << "Button Up" << std::endl;
+        case SDL_MOUSEWHEEL:
+            if(event.wheel.y > 0) // scroll up
+            {
+                
+            }
+            else if(event.wheel.y < 0) // scroll down
+            {
+                
+            }
         default:
             break;
         }
     }
 
     // clean up
+    int i;
     // SDL_DestroyTexture(data.penguin);
+    for (i = 0; i < files.size(); i++)
+    {
+        files[i]->quit();
+    }
+    files.erase(files.begin(), files.end());
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();
     TTF_Quit();
-    for (i = 0; i < files.size(); i++)
-    {
-        files[i]->quit();
-    }
+    
 
     return 0;
+}
+
+void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset)
+{
+    int i, x, y;
+    x = 220 + x_offset;
+    y = 45 + y_offset;
+    // Loop through Files and render them
+    for (i = 0; i < files.size(); i++)
+    {   
+        if (x >= (WIDTH - 80))
+        {
+            x = 220;
+            y += 80;
+        }
+        // Initialize and Render File
+        files[i]->initializeFile(renderer, files[i]->img_surf);
+        files[i]->renderFile(renderer, x, y);
+        x += 80;
+    }
 }
 
 void init(SDL_Renderer *renderer, AppData *data_ptr)
@@ -205,13 +233,25 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                     // Add button feature to toggle this on and off
                     //listDirectory(full_path, indent + 2);
                 }
-                FileEntry *file = new FileEntry(list[i].c_str());
-                files.push_back(file);
+                Directory *dir = new Directory;
+                
+                if (list[i].length() > 11)
+                {
+                    list[i] = list[i].substr(0, 10) + "...";
+                }
+                dir->setName(list[i].c_str());
+                files.push_back(dir);
             }
             else
             {
                 //printf("%s%s (%ld bytes)\n", space.c_str(), list[i].c_str(), file_info.st_size);
-                FileEntry *file = new FileEntry(list[i].c_str());
+                Other *file = new Other;
+
+                if (list[i].length() > 11)
+                {
+                    list[i] = list[i].substr(0, 10) + "...";
+                }
+                file->setName(list[i].c_str());
                 files.push_back(file);
             }
         }
