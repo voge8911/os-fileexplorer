@@ -3,7 +3,10 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
 #include <vector>
 #include <algorithm>
 #include "fileentry.h"
@@ -95,21 +98,37 @@ int main(int argc, char **argv)
                         break;
                     }
                 }
-                // If a file was clicked and the file clicked is a directory, open that directory
-                if (index != -1 && files[index]->sort_order == 0)
-                {
-                    std::string dir_name = files[index]->_full_path;
-                    std::cout << dir_name << std::endl;
+                // If a file was clicked
+                if (index != -1)
+                {   // If the file clicked is a directory, open that directory
+                    if (files[index]->sort_order == 0)
+                    {
+                        std::string dir_name = files[index]->_full_path;
+                        std::cout << dir_name << std::endl;
 
-                    files.erase(files.begin(), files.end());
+                        files.erase(files.begin(), files.end());
 
-                    listDirectory(dir_name, 0, files);
-                    std::sort(files.begin(), files.end(), FileComparator());
+                        listDirectory(dir_name, 0, files);
+                        std::sort(files.begin(), files.end(), FileComparator());
 
-                    // render files
-                    renderFiles(renderer, files, 0, 0, 0);
-                    // show rendered frame
-                    SDL_RenderPresent(renderer);
+                        // render files
+                        renderFiles(renderer, files, 0, 0, 0);
+                        // show rendered frame
+                        SDL_RenderPresent(renderer);
+                    }
+                    else if (files[index]->sort_order == 2 || files[index]->sort_order == 3 || 
+                             files[index]->sort_order == 4)
+                    {
+                        int pid = fork();
+                        
+                        if (pid == 0) //child process
+                        {   
+                            // Run file with its preferred application  
+                            execlp("/usr/bin/xdg-open", "xdg-open", files[index]->_full_path.c_str(), NULL);
+                            exit(1);
+                        }
+                        else {} // parent process
+                    }
                 }
             }
             break;
@@ -122,7 +141,7 @@ int main(int argc, char **argv)
                     std::cout << scroll_number << std::endl;
                     std::string d_name = files[0]->_full_path.substr(0, files[0]->_full_path.find_last_of("/"));
                     //std::cout << d_name << std::endl;
-                    files.erase(files.begin(), files.end());
+                    files.clear();
 
                     listDirectory(d_name, 0, files);
                     std::sort(files.begin(), files.end(), FileComparator());
@@ -135,14 +154,21 @@ int main(int argc, char **argv)
             }
             else if (event.wheel.y < 0) // scroll down
             {
-                if (files[files.size() - 1]->y_position >= HEIGHT) // if last files postition is off the screen
+                int size;
+                if (files.size() <= scroll_number + 13)
+                    size = files.size();
+                else
+                    size = scroll_number + 13;
+
+                std::cout << files[size - 1]->y_position << std::endl;
+                if (files[size - 1]->y_position >= HEIGHT)  // if last files postition is off the screen or not set
                 {
                     // Scroll down
                     scroll_number++;
                     std::cout << scroll_number << std::endl;
                     std::string d_name = files[0]->_full_path.substr(0, files[0]->_full_path.find_last_of("/"));
                     std::cout << d_name << std::endl;
-                    files.erase(files.begin(), files.end());
+                    files.clear();
 
                     listDirectory(d_name, 0, files);
                     std::sort(files.begin(), files.end(), FileComparator());
@@ -187,11 +213,16 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
     SDL_Rect rect = {200, 0, 700, 600};
     SDL_RenderFillRect(renderer, &rect);
 
-    int j, x, y;
+    int j, x, y, end_loop;
     x = 220 + x_offset;
     y = 45 + y_offset;
     // Loop through Files and render them
-    for (j = scroll_number; j < files.size(); j++)
+    if (files.size() <= scroll_number + 13)
+        end_loop = files.size();
+    else
+        end_loop = scroll_number + 13;
+
+    for (j = scroll_number; j < end_loop; j++)
     {   
         // Initialize and Render File
         files[j]->initializeFile(renderer, files[j]->img_surf);
