@@ -26,10 +26,12 @@ public:
     ~FileEntry();
 
     std::string _file_name;
+    std::string _full_path;
     SDL_Surface *img_surf;
     int sort_order;
+    int x_position, y_position, w_position, h_position;
 
-    void setName(std::string file_name);
+    void setName(std::string file_name, std::string file_path);
     void initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf);
     void renderFile(SDL_Renderer *renderer, int x, int y);
     void quit();
