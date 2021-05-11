@@ -1,4 +1,7 @@
 #include <iostream>
+#include <dirent.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -6,6 +9,13 @@
 
 FileEntry::FileEntry()
 {
+    data.font = NULL;
+    data.icon = NULL;
+    data.text = NULL;
+    data.info = NULL;
+    data.permissions = NULL;
+    _permissions = NULL;
+    _file_size = 0;
 }
 FileEntry::~FileEntry()
 {
@@ -28,10 +38,28 @@ bool FileComparator::operator ()(const FileEntry *f1, const FileEntry *f2)
     return false;
 }
 
-void FileEntry::setName(std::string file_name, std::string file_path)
+void FileEntry::setNameAndSize(std::string file_name, std::string file_path, struct stat file_info)
 {
     _file_name = file_name;
     _full_path = file_path;
+    if (!S_ISDIR(file_info.st_mode))
+    {
+        _file_size = file_info.st_size;
+    }
+    /*
+    if (S_IRUSR & file_info.st_mode)
+        strcpy(_permissions, "r");
+    else
+        strcpy(_permissions, "-");
+    if (S_IWUSR & file_info.st_mode)
+        strcpy(_permissions, "w");
+    else
+        strcpy(_permissions, "-");
+    if (S_IXUSR & file_info.st_mode)
+        strcpy(_permissions, "x");
+    else
+        strcpy(_permissions, "-");
+        */
 }
 
 void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
@@ -43,11 +71,45 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
     data.icon = SDL_CreateTextureFromSurface(renderer, img_surf);
     SDL_FreeSurface(img_surf);
 
-    // Set text and text color
+    // Set text and text color for file name
     SDL_Color color = { 255, 255, 255 };
     SDL_Surface *phrase_surf = TTF_RenderText_Solid(data.font, _file_name.c_str(), color);
     data.text = SDL_CreateTextureFromSurface(renderer, phrase_surf);
     SDL_FreeSurface(phrase_surf);
+
+    // Set text and text color for file info
+    if (_file_size != 0)
+    {
+        std::string file_size_string;
+        
+        if (_file_size >= 1073741824) // GB
+        {
+            _file_size = _file_size / 1073741824;
+            file_size_string = std::to_string(_file_size) + " GiB";
+        }
+        else if (_file_size >= 1048576) // MB
+        {
+            _file_size = _file_size / 1048576;
+            file_size_string = std::to_string(_file_size) + " MiB";
+        }
+        else if (_file_size >= 1024) // KB
+        {
+            _file_size = _file_size / 1024;
+            file_size_string = std::to_string(_file_size) + " KiB";
+        }
+        else
+        {
+            file_size_string = std::to_string(_file_size) + " Bytes";
+        }
+        SDL_Surface *info_surf = TTF_RenderText_Solid(data.font, file_size_string.c_str(), color);
+        data.info = SDL_CreateTextureFromSurface(renderer, info_surf);
+        SDL_FreeSurface(info_surf);
+
+        SDL_Surface *perm_surf = TTF_RenderText_Solid(data.font, _permissions, color);
+        data.permissions = SDL_CreateTextureFromSurface(renderer, perm_surf);
+        SDL_FreeSurface(perm_surf);
+    }
+    
 
     data.text_selected = false;
     data.icon_selected = false;
@@ -72,6 +134,17 @@ void FileEntry::renderFile(SDL_Renderer *renderer, int x, int y)
     y_position = y - 45;
     w_position = (text_rect.x + text_rect.w) - icon_rect.x;
     h_position = icon_rect.h;
+
+    if (_file_size != 0)
+    {   // Render text for file info
+        SDL_Rect info_rect = {x + 55, y - 10, 165, 200};
+        SDL_QueryTexture(data.info, NULL, NULL, &(info_rect.w), &(info_rect.h));
+        SDL_RenderCopy(renderer, data.info, NULL, &info_rect);
+        // Render text for file info
+        SDL_Rect permissions_rect = {x + 75, y - 10, 165, 200};
+        SDL_QueryTexture(data.permissions, NULL, NULL, &(permissions_rect.w), &(permissions_rect.h));
+        SDL_RenderCopy(renderer, data.permissions, NULL, &permissions_rect);
+    }
 }
 
 Directory::Directory()
@@ -112,7 +185,12 @@ Other::Other()
 
 void FileEntry::quit()
 {
-    SDL_DestroyTexture(data.icon);
-    SDL_DestroyTexture(data.text);
-    TTF_CloseFont(data.font);
+    if (data.icon != NULL && data.text != NULL && data.font != NULL && data.info != NULL && data.permissions != NULL)
+    {
+        SDL_DestroyTexture(data.icon);
+        SDL_DestroyTexture(data.text);
+        SDL_DestroyTexture(data.info);
+        SDL_DestroyTexture(data.permissions);
+        TTF_CloseFont(data.font);
+    }
 }

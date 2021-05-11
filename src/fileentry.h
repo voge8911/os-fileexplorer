@@ -11,6 +11,8 @@ typedef struct FileData
     TTF_Font *font;
     SDL_Texture *icon;
     SDL_Texture *text;
+    SDL_Texture *info;
+    SDL_Texture *permissions;
     SDL_Rect icon_location;
     SDL_Rect text_location;
     bool icon_selected;
@@ -25,13 +27,16 @@ public:
     FileEntry();
     ~FileEntry();
 
+    SDL_Surface *img_surf;
     std::string _file_name;
     std::string _full_path;
-    SDL_Surface *img_surf;
+    char *_permissions;
+    
+    int _file_size;
     int sort_order;
     int x_position, y_position, w_position, h_position;
 
-    void setName(std::string file_name, std::string file_path);
+    void setNameAndSize(std::string file_name, std::string file_path, struct stat file_info);
     void initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf);
     void renderFile(SDL_Renderer *renderer, int x, int y);
     void quit();
