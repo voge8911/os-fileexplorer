@@ -15,8 +15,7 @@ typedef struct FileData
     SDL_Texture *permissions;
     SDL_Rect icon_location;
     SDL_Rect text_location;
-    bool icon_selected;
-    bool text_selected;
+
 } FileData;
 
 class FileEntry {
@@ -31,6 +30,7 @@ public:
     std::string _file_name;
     std::string _full_path;
     char *_permissions;
+    bool isInitialized;
     
     int _file_size;
     int sort_order;

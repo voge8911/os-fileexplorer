@@ -16,6 +16,7 @@ FileEntry::FileEntry()
     data.permissions = NULL;
     _permissions = NULL;
     _file_size = 0;
+    isInitialized = false;
 }
 FileEntry::~FileEntry()
 {
@@ -110,9 +111,7 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
         SDL_FreeSurface(perm_surf);
     }
     
-
-    data.text_selected = false;
-    data.icon_selected = false;
+    isInitialized = true;
 }
 
 void FileEntry::renderFile(SDL_Renderer *renderer, int x, int y)

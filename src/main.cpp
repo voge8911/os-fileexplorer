@@ -114,7 +114,6 @@ int main(int argc, char **argv)
                         }
                         else // parent process
                         {
-
                         } 
                     }
                 }
@@ -127,12 +126,6 @@ int main(int argc, char **argv)
                 {
                     scroll_number--;
                     std::cout << scroll_number << std::endl;
-                    std::string d_name = files[0]->_full_path.substr(0, files[0]->_full_path.find_last_of("/"));
-                    //std::cout << d_name << std::endl;
-                    files.clear();
-
-                    listDirectory(d_name, 0, files);
-                    std::sort(files.begin(), files.end(), FileComparator());
 
                     // render files
                     renderFiles(renderer, files, 0, 0, scroll_number);
@@ -154,12 +147,6 @@ int main(int argc, char **argv)
                     // Scroll down
                     scroll_number++;
                     std::cout << scroll_number << std::endl;
-                    std::string d_name = files[0]->_full_path.substr(0, files[0]->_full_path.find_last_of("/"));
-                    std::cout << d_name << std::endl;
-                    files.clear();
-
-                    listDirectory(d_name, 0, files);
-                    std::sort(files.begin(), files.end(), FileComparator());
 
                     // render files
                     renderFiles(renderer, files, 0, 0, scroll_number);
@@ -213,7 +200,10 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
     for (j = scroll_number; j < end_loop; j++)
     {   
         // Initialize and Render File
-        files[j]->initializeFile(renderer, files[j]->img_surf);
+        if (!files[j]->isInitialized) // If file is already initialized don't initialize again
+        {
+            files[j]->initializeFile(renderer, files[j]->img_surf);
+        }
         files[j]->renderFile(renderer, x, y);
         y += 50;
     }
