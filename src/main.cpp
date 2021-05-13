@@ -15,17 +15,18 @@
 #define HEIGHT 600
 
 void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset, int scroll_number);
-void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files);
+void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory);
 
 int main(int argc, char **argv)
 {
     char *home = getenv("HOME");
+    char *asdf = "/home/johnv/Downloads";
     printf("HOME: %s\n", home);
     std::vector<FileEntry *> files;
 
-    listDirectory(home, 0, files);
-    std::sort(files.begin(), files.end(), FileComparator());
-    
+    listDirectory(asdf, 0, files, false);
+    //std::sort(files.begin(), files.end(), FileComparator());
+
     printf("# of files = %ld\n", files.size());
 
     // initializing SDL as Video
@@ -94,7 +95,7 @@ int main(int argc, char **argv)
 
                         files.erase(files.begin(), files.end());
 
-                        listDirectory(dir_name, 0, files);
+                        listDirectory(dir_name, 0, files, false);
                         std::sort(files.begin(), files.end(), FileComparator());
 
                         // render files
@@ -211,7 +212,7 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
 
 // Print all entries in directory in alphabetical order
 // In addition to file name, also print file size (or 'directory' if entry is a folder)
-void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files)
+void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory)
 {
     int i;
     std::string space = "";
@@ -248,26 +249,33 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
             {
                 fprintf(stderr, "UH OH, Shouldn't be here\n");
             }
+            else if(isSubDirectory && list[i] == "..") // Preventing sub directories to print their ".." directory
+            {
+            }
             // Assign file type
             else if (list[i] != ".")
             {   
                 // Directory
                 if (S_ISDIR(file_info.st_mode))
                 {
+                    Directory *dir = new Directory;
+                    dir->setIndent(indent);
+                    dir->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    files.push_back(dir);
+
                     if (list[i] != "..")
                     {
                         // list sub-directories
                         // Add button feature to toggle this on and off
-                        //listDirectory(full_path, indent + 2, files);
+                        listDirectory(full_path, indent + 25, files, true);
+
                     }
-                    Directory *dir = new Directory;
-                    dir->setNameAndSize(list[i].c_str(), full_path, file_info);
-                    files.push_back(dir);
                 }
                 // File as excecute permissions
                 else if (S_IXUSR & file_info.st_mode)
                 {
                     Excecutable *exec = new Excecutable;
+                    exec->setIndent(indent);
                     exec->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(exec);
                 }
@@ -276,6 +284,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                          extension == "tif" || extension == "tiff" || extension == "gif")
                 {
                     Image *image = new Image;
+                    image->setIndent(indent);
                     image->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(image);
                 }
@@ -284,6 +293,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                          extension == "avi" || extension == "webm") 
                 {
                     Video *vid = new Video;
+                    vid->setIndent(indent);
                     vid->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(vid);
                 }
@@ -292,6 +302,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                          extension == "py" || extension == "java" || extension == "js"  )  
                 {
                     CodeFile *code = new CodeFile;
+                    code->setIndent(indent);
                     code->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(code);
                 }
@@ -299,6 +310,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     //printf("%s%s (%ld bytes)\n", space.c_str(), list[i].c_str(), file_info.st_size);
                     Other *file = new Other;
+                    file->setIndent(indent);
                     file->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(file);
                 }

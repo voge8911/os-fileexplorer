@@ -35,7 +35,9 @@ public:
     int _file_size;
     int sort_order;
     int x_position, y_position, w_position, h_position;
+    int _indent;
 
+    void setIndent(int indent);
     void setNameAndSize(std::string file_name, std::string file_path, struct stat file_info);
     void initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf);
     void renderFile(SDL_Renderer *renderer, int x, int y);

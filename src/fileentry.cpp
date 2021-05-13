@@ -16,6 +16,7 @@ FileEntry::FileEntry()
     data.permissions = NULL;
     _permissions = NULL;
     _file_size = 0;
+    _indent = 0;
     isInitialized = false;
 }
 FileEntry::~FileEntry()
@@ -23,16 +24,21 @@ FileEntry::~FileEntry()
     delete[] img_surf;
 }
 
+void FileEntry::setIndent(int indent)
+{
+    _indent = indent;
+}
+
 // Sort files by file type and alphabetically
 bool FileComparator::operator ()(const FileEntry *f1, const FileEntry *f2)
 {
     // By File type
-    if (f1->sort_order < f2->sort_order) 
+    if (f1->sort_order < f2->sort_order && f1->_indent == f2->_indent) 
     {
         return true;
     }
     // Alphabetically
-    if (f1->sort_order == f2->sort_order && f1->_file_name < f2->_file_name) 
+    if (f1->sort_order == f2->sort_order && f1->_file_name < f2->_file_name && f1->_indent == f2->_indent) 
     {
         return true;
     }
@@ -74,7 +80,7 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
 
     // Set text and text color for file name
     SDL_Color color = { 255, 255, 255 };
-    SDL_Surface *phrase_surf = TTF_RenderText_Solid(data.font, _file_name.c_str(), color);
+    SDL_Surface *phrase_surf = TTF_RenderText_Blended(data.font, _file_name.c_str(), color);
     data.text = SDL_CreateTextureFromSurface(renderer, phrase_surf);
     SDL_FreeSurface(phrase_surf);
 
@@ -102,11 +108,11 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
         {
             file_size_string = std::to_string(_file_size) + " Bytes";
         }
-        SDL_Surface *info_surf = TTF_RenderText_Solid(data.font, file_size_string.c_str(), color);
+        SDL_Surface *info_surf = TTF_RenderText_Blended(data.font, file_size_string.c_str(), color);
         data.info = SDL_CreateTextureFromSurface(renderer, info_surf);
         SDL_FreeSurface(info_surf);
 
-        SDL_Surface *perm_surf = TTF_RenderText_Solid(data.font, _permissions, color);
+        SDL_Surface *perm_surf = TTF_RenderText_Blended(data.font, _permissions, color);
         data.permissions = SDL_CreateTextureFromSurface(renderer, perm_surf);
         SDL_FreeSurface(perm_surf);
     }
@@ -116,6 +122,7 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
 
 void FileEntry::renderFile(SDL_Renderer *renderer, int x, int y)
 {
+    x = x + _indent;
     SDL_Rect icon_rect = {x     , y - 45, 165, 200};
     SDL_Rect text_rect = {x + 55, y - 30, 165, 200};
     // Render icon
