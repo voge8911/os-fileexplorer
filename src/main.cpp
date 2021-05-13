@@ -14,8 +14,16 @@
 #define WIDTH 900
 #define HEIGHT 600
 
-void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset, int scroll_number);
-void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory);
+typedef struct AppData
+{
+    TTF_Font *font;
+    SDL_Texture *text;
+    int x, y, w, h;
+    bool isEnabled;
+} AppData;
+
+void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset, int scroll_number, AppData recursive_data);
+void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory, bool isRecursionEnabled);
 
 int main(int argc, char **argv)
 {
@@ -24,8 +32,7 @@ int main(int argc, char **argv)
     printf("HOME: %s\n", home);
     std::vector<FileEntry *> files;
 
-    listDirectory(asdf, 0, files, false);
-    //std::sort(files.begin(), files.end(), FileComparator());
+    listDirectory(asdf, 0, files, false, false);
 
     printf("# of files = %ld\n", files.size());
 
@@ -39,14 +46,20 @@ int main(int argc, char **argv)
     SDL_Window *window;
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
 
-    // initialize and perform rendering loop
-    //AppData data;
-    //init(renderer, &data);
-    //render(renderer, &data);
+    // Initialize recursive view mode button
+    AppData recursive_data;
+    recursive_data.isEnabled = false;
+    recursive_data.font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 12);
+
+    // Set text of recursive button
+    SDL_Color color = { 255, 255, 255 };
+    SDL_Surface *phrase_surf = TTF_RenderText_Blended(recursive_data.font, "Recursive View Mode", color);
+    recursive_data.text = SDL_CreateTextureFromSurface(renderer, phrase_surf);
+    SDL_FreeSurface(phrase_surf);
 
     // render files
     int scroll_number = 0;
-    renderFiles(renderer, files, 0, 0, scroll_number);
+    renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
 
     // show rendered frame
     SDL_RenderPresent(renderer);
@@ -70,9 +83,13 @@ int main(int argc, char **argv)
             if (event.button.button == SDL_BUTTON_LEFT)
             {
                 int index = -1;
-                int i;
+                int i, end_loop;
+                if (files.size() <= scroll_number + 13)
+                    end_loop = files.size();
+                else
+                    end_loop = scroll_number + 13;
                 // Loop through files currently display on the window, and find if a file was clicked
-                for (i = scroll_number; i < files.size() + 12; i++)
+                for (i = scroll_number; i < end_loop; i++)
                 {
                     if(event.button.x >= files[i]->x_position &&
                        event.button.x <= files[i]->x_position + files[i]->w_position && 
@@ -94,12 +111,10 @@ int main(int argc, char **argv)
                         std::cout << dir_name << std::endl;
 
                         files.erase(files.begin(), files.end());
-
-                        listDirectory(dir_name, 0, files, false);
-                        std::sort(files.begin(), files.end(), FileComparator());
+                        listDirectory(dir_name, 0, files, false, recursive_data.isEnabled);
 
                         // render files
-                        renderFiles(renderer, files, 0, 0, 0);
+                        renderFiles(renderer, files, 0, 0, 0, recursive_data);
                         // show rendered frame
                         SDL_RenderPresent(renderer);
                     }
@@ -118,6 +133,29 @@ int main(int argc, char **argv)
                         } 
                     }
                 }
+                // If recursive view mode button clicked
+                else if(event.button.x >= 50 &&
+                        event.button.x <= 50 + 118 && 
+                        event.button.y >= 50 &&
+                        event.button.y <= 50 + 17)
+                {
+                    recursive_data.isEnabled = !recursive_data.isEnabled; // toggle button
+                    std::cout << recursive_data.isEnabled << std::endl;
+
+                    std::string dir_name = files[0]->_full_path;
+                    std::string path = dir_name.substr(0, dir_name.find_last_of("/") + 1);
+
+                    std::cout << path << std::endl;
+                    
+                    files.erase(files.begin(), files.end());
+                    listDirectory(path, 0, files, false, recursive_data.isEnabled);
+
+                    // render files
+                    renderFiles(renderer, files, 0, 0, 0, recursive_data);
+                    // show rendered frame
+                    SDL_RenderPresent(renderer);
+                    
+                }
             }
             break;
         case SDL_MOUSEWHEEL:
@@ -129,7 +167,7 @@ int main(int argc, char **argv)
                     std::cout << scroll_number << std::endl;
 
                     // render files
-                    renderFiles(renderer, files, 0, 0, scroll_number);
+                    renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
                     // show rendered frame
                     SDL_RenderPresent(renderer);
                 }
@@ -142,7 +180,6 @@ int main(int argc, char **argv)
                 else
                     size = scroll_number + 13;
 
-                std::cout << files[size - 1]->y_position << std::endl;
                 if (files[size - 1]->y_position >= HEIGHT)  // if a files postition is below the window
                 {
                     // Scroll down
@@ -150,7 +187,7 @@ int main(int argc, char **argv)
                     std::cout << scroll_number << std::endl;
 
                     // render files
-                    renderFiles(renderer, files, 0, 0, scroll_number);
+                    renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
                     // show rendered frame
                     SDL_RenderPresent(renderer);
                 }
@@ -169,8 +206,11 @@ int main(int argc, char **argv)
         files[i]->quit();
     }
     files.clear();
+    
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    SDL_DestroyTexture(recursive_data.text);
+    TTF_CloseFont(recursive_data.font);
     IMG_Quit();
     SDL_Quit();
     TTF_Quit();
@@ -178,7 +218,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset, int scroll_number)
+void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_offset, int y_offset, int scroll_number, AppData recursive_data)
 {
     // erase renderer content
     SDL_SetRenderDrawColor(renderer, 60, 60, 60, 0);
@@ -188,6 +228,11 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
     SDL_SetRenderDrawColor(renderer, 35, 35, 35, 0);
     SDL_Rect rect = {200, 0, 700, 600};
     SDL_RenderFillRect(renderer, &rect);
+
+    // Render recursive button
+    SDL_Rect rect1 = {50, 50, 200, 200};
+    SDL_QueryTexture(recursive_data.text, NULL, NULL, &(rect1.w), &(rect1.h));
+    SDL_RenderCopy(renderer, recursive_data.text, NULL, &rect1);
 
     int j, x, y, end_loop;
     x = 220 + x_offset;
@@ -212,7 +257,7 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
 
 // Print all entries in directory in alphabetical order
 // In addition to file name, also print file size (or 'directory' if entry is a folder)
-void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory)
+void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory, bool isRecursionEnabled)
 {
     int i;
     std::string space = "";
@@ -263,12 +308,10 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                     dir->setNameAndSize(list[i].c_str(), full_path, file_info);
                     files.push_back(dir);
 
-                    if (list[i] != "..")
+                    if (list[i] != ".." && isRecursionEnabled)
                     {
                         // list sub-directories
-                        // Add button feature to toggle this on and off
-                        listDirectory(full_path, indent + 25, files, true);
-
+                        listDirectory(full_path, indent + 25, files, true, true);
                     }
                 }
                 // File as excecute permissions
