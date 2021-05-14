@@ -14,7 +14,7 @@ FileEntry::FileEntry()
     data.text = NULL;
     data.info = NULL;
     data.permissions = NULL;
-    _permissions = NULL;
+
     _file_size = 0;
     _indent = 0;
     isInitialized = false;
@@ -45,34 +45,63 @@ bool FileComparator::operator ()(const FileEntry *f1, const FileEntry *f2)
     return false;
 }
 
-void FileEntry::setNameAndSize(std::string file_name, std::string file_path, struct stat file_info)
-{
+void FileEntry::setNameAndSize(std::string file_name, std::string file_path)
+{   
+    struct stat file_info;
+    stat(file_path.c_str(), &file_info);
+
     _file_name = file_name;
     _full_path = file_path;
     if (!S_ISDIR(file_info.st_mode))
     {
         _file_size = file_info.st_size;
     }
-    /*
+    // Owner permissions
     if (S_IRUSR & file_info.st_mode)
-        strcpy(_permissions, "r");
+        _permissions += "r";
     else
-        strcpy(_permissions, "-");
+        _permissions += "-";
     if (S_IWUSR & file_info.st_mode)
-        strcpy(_permissions, "w");
+        _permissions += "w";
     else
-        strcpy(_permissions, "-");
+        _permissions += "-";
     if (S_IXUSR & file_info.st_mode)
-        strcpy(_permissions, "x");
+        _permissions += "x";
     else
-        strcpy(_permissions, "-");
-        */
+        _permissions += "-";
+    // Group permissions
+    if (S_IRGRP & file_info.st_mode)
+        _permissions += "r";
+    else
+        _permissions += "-";
+    if (S_IWGRP & file_info.st_mode)
+        _permissions += "w";
+    else
+        _permissions += "-";
+    if (S_IXGRP & file_info.st_mode)
+        _permissions += "x";
+    else
+        _permissions += "-";
+    // Others permissions
+    if (S_IROTH & file_info.st_mode)
+        _permissions += "r";
+    else
+        _permissions += "-";
+    if (S_IWOTH & file_info.st_mode)
+        _permissions += "w";
+    else
+        _permissions += "-";
+    if (S_IXOTH & file_info.st_mode)
+        _permissions += "x";
+    else
+        _permissions += "-";
+        
 }
 
 void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
 {
     // Set font
-    data.font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 12);
+    data.font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 14);
 
     // Set icon
     data.icon = SDL_CreateTextureFromSurface(renderer, img_surf);
@@ -108,11 +137,15 @@ void FileEntry::initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf)
         {
             file_size_string = std::to_string(_file_size) + " Bytes";
         }
+
+        color = { 255, 255, 255, 200 };
+        data.font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 10);
+
         SDL_Surface *info_surf = TTF_RenderText_Blended(data.font, file_size_string.c_str(), color);
         data.info = SDL_CreateTextureFromSurface(renderer, info_surf);
         SDL_FreeSurface(info_surf);
 
-        SDL_Surface *perm_surf = TTF_RenderText_Blended(data.font, _permissions, color);
+        SDL_Surface *perm_surf = TTF_RenderText_Blended(data.font, _permissions.c_str(), color);
         data.permissions = SDL_CreateTextureFromSurface(renderer, perm_surf);
         SDL_FreeSurface(perm_surf);
     }
@@ -147,7 +180,7 @@ void FileEntry::renderFile(SDL_Renderer *renderer, int x, int y)
         SDL_QueryTexture(data.info, NULL, NULL, &(info_rect.w), &(info_rect.h));
         SDL_RenderCopy(renderer, data.info, NULL, &info_rect);
         // Render text for file info
-        SDL_Rect permissions_rect = {x + 75, y - 10, 165, 200};
+        SDL_Rect permissions_rect = {x + 75 + info_rect.w, y - 10, 165, 200};
         SDL_QueryTexture(data.permissions, NULL, NULL, &(permissions_rect.w), &(permissions_rect.h));
         SDL_RenderCopy(renderer, data.permissions, NULL, &permissions_rect);
     }

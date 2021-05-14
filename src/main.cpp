@@ -26,16 +26,7 @@ void renderFiles(SDL_Renderer *renderer, std::vector<FileEntry *> &files, int x_
 void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &files, bool isSubDirectory, bool isRecursionEnabled);
 
 int main(int argc, char **argv)
-{
-    char *home = getenv("HOME");
-    char *asdf = "/home/johnv/Downloads";
-    printf("HOME: %s\n", home);
-    std::vector<FileEntry *> files;
-
-    listDirectory(asdf, 0, files, false, false);
-
-    printf("# of files = %ld\n", files.size());
-
+{   
     // initializing SDL as Video
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
@@ -46,10 +37,19 @@ int main(int argc, char **argv)
     SDL_Window *window;
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
 
-    // Initialize recursive view mode button
+    
     AppData recursive_data;
+    int scroll_number = 0;
+    char *home = getenv("HOME");
+    std::vector<FileEntry *> files;
+
+    // Initialize recursive view mode button
     recursive_data.isEnabled = false;
     recursive_data.font = TTF_OpenFont("resrc/OpenSans-Regular.ttf", 12);
+
+    // Add files to list
+    printf("HOME: %s\n", home);
+    listDirectory(home, 0, files, false, false);
 
     // Set text of recursive button
     SDL_Color color = { 255, 255, 255 };
@@ -58,7 +58,6 @@ int main(int argc, char **argv)
     SDL_FreeSurface(phrase_surf);
 
     // render files
-    int scroll_number = 0;
     renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
 
     // show rendered frame
@@ -68,18 +67,10 @@ int main(int argc, char **argv)
     SDL_WaitEvent(&event);
     while (event.type != SDL_QUIT)
     {
-        //render(renderer);
         SDL_WaitEvent(&event);
         switch (event.type)
         {
-        case SDL_MOUSEMOTION:
-            //std::cout << "mouse: x=" << event.motion.x << " y=" << event.motion.y << std::endl;
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            std::cout << "Button Down" << std::endl;
-            break;
         case SDL_MOUSEBUTTONUP:
-            std::cout << "Button Up" << std::endl;
             if (event.button.button == SDL_BUTTON_LEFT)
             {
                 int index = -1;
@@ -96,7 +87,6 @@ int main(int argc, char **argv)
                        event.button.y >= files[i]->y_position &&
                        event.button.y <= files[i]->y_position + files[i]->h_position)
                     {
-                        std::cout << "index = " << i << std::endl;
                         index = i;
                         break;
                     }
@@ -108,7 +98,6 @@ int main(int argc, char **argv)
                     {
                         scroll_number = 0; // reset scroll number
                         std::string dir_name = files[index]->_full_path;
-                        std::cout << dir_name << std::endl;
 
                         files.erase(files.begin(), files.end());
                         listDirectory(dir_name, 0, files, false, recursive_data.isEnabled);
@@ -139,13 +128,16 @@ int main(int argc, char **argv)
                         event.button.y >= 50 &&
                         event.button.y <= 50 + 17)
                 {
-                    recursive_data.isEnabled = !recursive_data.isEnabled; // toggle button
-                    std::cout << recursive_data.isEnabled << std::endl;
+                    if(!recursive_data.isEnabled)
+                        SDL_SetTextureColorMod( recursive_data.text, 180, 180, 180 ); // recursive mode on
+                    else
+                        SDL_SetTextureColorMod( recursive_data.text, 255, 255, 255 ); // recursive mode off
+
+                    scroll_number = 0; // reset scroll number
+                    recursive_data.isEnabled = !recursive_data.isEnabled; // toggle recursive button
 
                     std::string dir_name = files[0]->_full_path;
                     std::string path = dir_name.substr(0, dir_name.find_last_of("/") + 1);
-
-                    std::cout << path << std::endl;
                     
                     files.erase(files.begin(), files.end());
                     listDirectory(path, 0, files, false, recursive_data.isEnabled);
@@ -164,8 +156,6 @@ int main(int argc, char **argv)
                 if (scroll_number > 0)
                 {
                     scroll_number--;
-                    std::cout << scroll_number << std::endl;
-
                     // render files
                     renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
                     // show rendered frame
@@ -191,9 +181,9 @@ int main(int argc, char **argv)
                     // show rendered frame
                     SDL_RenderPresent(renderer);
                 }
-                else 
-                    break;
+                break;
             }
+            break;
         default:
             break;
         }
@@ -305,7 +295,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     Directory *dir = new Directory;
                     dir->setIndent(indent);
-                    dir->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    dir->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(dir);
 
                     if (list[i] != ".." && isRecursionEnabled)
@@ -319,7 +309,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     Excecutable *exec = new Excecutable;
                     exec->setIndent(indent);
-                    exec->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    exec->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(exec);
                 }
                 // Image
@@ -328,7 +318,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     Image *image = new Image;
                     image->setIndent(indent);
-                    image->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    image->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(image);
                 }
                 // Video
@@ -337,7 +327,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     Video *vid = new Video;
                     vid->setIndent(indent);
-                    vid->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    vid->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(vid);
                 }
                 // Code file
@@ -346,7 +336,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 {
                     CodeFile *code = new CodeFile;
                     code->setIndent(indent);
-                    code->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    code->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(code);
                 }
                 else
@@ -354,7 +344,7 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                     //printf("%s%s (%ld bytes)\n", space.c_str(), list[i].c_str(), file_info.st_size);
                     Other *file = new Other;
                     file->setIndent(indent);
-                    file->setNameAndSize(list[i].c_str(), full_path, file_info);
+                    file->setNameAndSize(list[i].c_str(), full_path);
                     files.push_back(file);
                 }
             }

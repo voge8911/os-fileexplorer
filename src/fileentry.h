@@ -29,7 +29,7 @@ public:
     SDL_Surface *img_surf;
     std::string _file_name;
     std::string _full_path;
-    char *_permissions;
+    std::string _permissions;
     bool isInitialized;
     
     int _file_size;
@@ -38,7 +38,7 @@ public:
     int _indent;
 
     void setIndent(int indent);
-    void setNameAndSize(std::string file_name, std::string file_path, struct stat file_info);
+    void setNameAndSize(std::string file_name, std::string file_path);
     void initializeFile(SDL_Renderer *renderer, SDL_Surface *img_surf);
     void renderFile(SDL_Renderer *renderer, int x, int y);
     void quit();
