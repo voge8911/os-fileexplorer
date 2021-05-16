@@ -29,20 +29,10 @@ void FileEntry::setIndent(int indent)
     _indent = indent;
 }
 
-// Sort files by file type and alphabetically
+// Sort files by... not used
 bool FileComparator::operator ()(const FileEntry *f1, const FileEntry *f2)
 {
-    // By File type
-    if (f1->sort_order < f2->sort_order && f1->_indent == f2->_indent) 
-    {
-        return true;
-    }
-    // Alphabetically
-    if (f1->sort_order == f2->sort_order && f1->_file_name < f2->_file_name && f1->_indent == f2->_indent) 
-    {
-        return true;
-    }
-    return false;
+    return true;
 }
 
 void FileEntry::setNameAndSize(std::string file_name, std::string file_path)

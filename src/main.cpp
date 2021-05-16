@@ -108,7 +108,7 @@ int main(int argc, char **argv)
                         SDL_RenderPresent(renderer);
                     }
                     // If the file clicked is a file, open that file with its preferred application  
-                    else if (files[index]->sort_order == 2 || files[index]->sort_order == 3 || 
+                    else if (files[index]->sort_order == 1 || files[index]->sort_order == 2 || files[index]->sort_order == 3 ||
                              files[index]->sort_order == 4 || files[index]->sort_order == 5)
                     {
                         int pid = fork();
@@ -174,8 +174,6 @@ int main(int argc, char **argv)
                 {
                     // Scroll down
                     scroll_number++;
-                    std::cout << scroll_number << std::endl;
-
                     // render files
                     renderFiles(renderer, files, 0, 0, scroll_number, recursive_data);
                     // show rendered frame
@@ -341,7 +339,6 @@ void listDirectory(std::string dirname, int indent, std::vector<FileEntry *> &fi
                 }
                 else
                 {
-                    //printf("%s%s (%ld bytes)\n", space.c_str(), list[i].c_str(), file_info.st_size);
                     Other *file = new Other;
                     file->setIndent(indent);
                     file->setNameAndSize(list[i].c_str(), full_path);

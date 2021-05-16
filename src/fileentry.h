@@ -44,15 +44,15 @@ public:
     void quit();
 };
 
+struct FileComparator {
+    bool operator ()(const FileEntry *f1, const FileEntry *f2);
+};
+
 class Directory: public FileEntry {
 private:
     
 public:
     Directory();
-};
-
-struct FileComparator {
-    bool operator ()(const FileEntry *f1, const FileEntry *f2);
 };
 
 class Excecutable: public FileEntry {
