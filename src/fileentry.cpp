@@ -170,7 +170,7 @@ void FileEntry::renderFile(SDL_Renderer *renderer, int x, int y)
         SDL_QueryTexture(data.info, NULL, NULL, &(info_rect.w), &(info_rect.h));
         SDL_RenderCopy(renderer, data.info, NULL, &info_rect);
         // Render text for file info
-        SDL_Rect permissions_rect = {x + 75 + info_rect.w, y - 10, 165, 200};
+        SDL_Rect permissions_rect = {x + 125, y - 10, 165, 200};
         SDL_QueryTexture(data.permissions, NULL, NULL, &(permissions_rect.w), &(permissions_rect.h));
         SDL_RenderCopy(renderer, data.permissions, NULL, &permissions_rect);
     }
